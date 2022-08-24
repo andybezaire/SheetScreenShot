@@ -11,7 +11,7 @@ extension XCTestCase {
         line: UInt = #line
     ) {
         let snapshotURL = makeSnapshotURL(file: file, name: name)
-        let snapshot = view.snapshot(for: configuration)
+        let snapshot = view.snapshotFromKeyWindow(for: configuration)
         let snapshotData = makeSnapshotData(from: snapshot, file: file, line: line)
         do {
             try FileManager.default.createDirectory(
@@ -139,5 +139,20 @@ private extension XCTestCase {
             .deletingLastPathComponent()
             .appendingPathComponent("snapshots")
             .appendingPathComponent("\(name).png")
+    }
+}
+
+private extension View {
+    func snapshotFromKeyWindow(for configuration: SnapshotConfiguration) -> UIImage {
+        let root = UIHostingController(rootView: self)
+        let keyWindow = (UIApplication.shared.connectedScenes.first as! UIWindowScene).keyWindow!
+        keyWindow.rootViewController = root
+
+        RunLoop.current.run(until: Date())
+
+        let renderer = UIGraphicsImageRenderer(bounds: keyWindow.bounds, format: .init(for: keyWindow.traitCollection))
+        return renderer.image { action in
+            keyWindow.layer.render(in: action.cgContext)
+        }
     }
 }
